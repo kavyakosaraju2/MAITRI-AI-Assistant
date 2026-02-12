@@ -1,26 +1,41 @@
 from transformers import pipeline
 
-# Load summarization model
+# Load summarization model ONCE
 summarizer = pipeline(
     "summarization",
-    model="facebook/bart-large-cnn"
+    model="facebook/bart-large-cnn",
+    device=-1  # CPU
 )
 
 def summarize_email(email_text):
-    if not email_text or len(email_text.strip()) < 50:
-        return "Email content is too short to summarize."
+    if not email_text:
+        return "This email has no readable content."
 
-    # 🔹 VERY IMPORTANT: limit input size
-    max_input_length = 1000
-    email_text = email_text[:max_input_length]
+    cleaned_text = email_text.strip()
 
-    summary = summarizer(
-        email_text,
-        max_length=60,
-        min_length=20,
-        do_sample=False
-    )
+    # -----------------------------
+    # SHORT EMAIL → READ IT
+    # -----------------------------
+    if len(cleaned_text) < 200:
+        return f"This email says: {cleaned_text}"
 
-    return summary[0]["summary_text"]
+    # -----------------------------
+    # LONG EMAIL → SUMMARIZE
+    # -----------------------------
+    try:
+        summary = summarizer(
+            cleaned_text,
+            max_length=120,
+            min_length=40,
+            do_sample=False
+        )
+
+        return summary[0]["summary_text"]
+
+    except Exception:
+        # Fallback safety
+        return f"This email says: {cleaned_text[:300]}"
+
+
 
 
