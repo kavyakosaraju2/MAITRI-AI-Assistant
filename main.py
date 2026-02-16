@@ -94,21 +94,7 @@ while True:
         speak(daily_summary)
         continue
 
-    elif action == "LAST_EMAIL":
-        if emails:
-            last = emails[0]
-            sender = last.get("from", "Unknown sender")
-            subject = last.get("subject", "No subject")
-
-            answer = (
-                f"Your latest email was sent by {sender}. "
-                f"The subject is {subject}."
-            )
-            print("🧠 ANSWER:", answer)
-            speak(answer)
-        else:
-            speak("You have no emails.")
-        continue
+   
     elif action == "CHECK_TASKS":
         pending = [t for t in tasks if t["status"] == "needsAction"]
         if pending:
