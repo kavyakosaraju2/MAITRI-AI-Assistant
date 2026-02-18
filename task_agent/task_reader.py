@@ -19,7 +19,26 @@ def read_tasks(creds):
             if due != "No due date":
                 due = due[:10]
 
-            print(f"- {title} [{status}] | Due: {due}")
+            #print(f"- {title} [{status}] | Due: {due}")
             all_tasks.append(task)
 
     return all_tasks
+
+def create_task(creds, title, due_date):
+    from googleapiclient.discovery import build
+
+    service = build("tasks", "v1", credentials=creds)
+
+    task = {
+        "title": title,
+    }
+
+    if due_date:
+        task["due"] = due_date.isoformat() + "Z"
+
+    created_task = service.tasks().insert(
+        tasklist="@default",
+        body=task
+    ).execute()
+
+    return created_task.get("id")

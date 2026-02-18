@@ -11,6 +11,8 @@ beautifulsoup4
 
 SpeechRecognition
 pyttsx3
-pyaudio
+pyaudio/sounddevice
 
 requests
+
+spaCy

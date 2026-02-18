@@ -1,33 +1,44 @@
 import speech_recognition as sr
+import sounddevice as sd
+import numpy as np
 
-def listen_to_user(timeout=3, phrase_time_limit=4):
-    r = sr.Recognizer()
+
+def listen_to_user(timeout=5, phrase_time_limit=8):
+
+    recognizer = sr.Recognizer()
+
+    sample_rate = 16000
+    duration = phrase_time_limit
+
+    print("🎤 MAITRI is listening... Speak now")
+
+    # Record audio
+    audio_np = sd.rec(
+        int(duration * sample_rate),
+        samplerate=sample_rate,
+        channels=1,
+        dtype="int16"
+    )
+
+    sd.wait()
+
+    audio_data = sr.AudioData(
+        audio_np.tobytes(),
+        sample_rate,
+        2
+    )
 
     try:
-        with sr.Microphone() as source:
-            print("🎤 MAITRI is listening... Speak now")
-            r.adjust_for_ambient_noise(source, duration=0.5)
+        text = recognizer.recognize_google(audio_data)
 
-            audio = r.listen(
-                source,
-                timeout=timeout,
-                phrase_time_limit=phrase_time_limit
-            )
-
-        text = r.recognize_google(audio)
         print(f"🗣 You said: {text}")
+
         return text.lower()
 
-    except sr.WaitTimeoutError:
-        # ⏱ No speech detected
-        return None
-
     except sr.UnknownValueError:
-        # Speech unclear
+        print("⚠ Could not understand audio.")
         return None
 
     except sr.RequestError:
-        print("Speech service error")
+        print("⚠ Speech recognition service error.")
         return None
-
-
