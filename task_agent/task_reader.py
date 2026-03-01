@@ -1,4 +1,5 @@
 from googleapiclient.discovery import build
+from datetime import datetime
 
 def read_tasks(creds):
     service = build("tasks", "v1", credentials=creds)
@@ -24,21 +25,31 @@ def read_tasks(creds):
 
     return all_tasks
 
+
+
+
 def create_task(creds, title, due_date):
-    from googleapiclient.discovery import build
 
     service = build("tasks", "v1", credentials=creds)
 
-    task = {
-        "title": title,
+    task_body = {
+        "title": title
     }
 
+    # 🔥 Only add due date if it exists
     if due_date:
-        task["due"] = due_date.isoformat() + "Z"
+        if isinstance(due_date, str):
+            try:
+                due_date = datetime.strptime(due_date, "%Y-%m-%d")
+                task_body["due"] = due_date.isoformat() + "Z"
+            except:
+                pass
+        elif isinstance(due_date, datetime):
+            task_body["due"] = due_date.isoformat() + "Z"
 
-    created_task = service.tasks().insert(
+    service.tasks().insert(
         tasklist="@default",
-        body=task
+        body=task_body
     ).execute()
 
-    return created_task.get("id")
+    print("📝 Task created successfully.")

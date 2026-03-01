@@ -148,7 +148,7 @@ def decide_response(user_input, emails, events, tasks):
         if not memory.last_email:
             return "There is no email to summarize."
 
-        print("EMAIL OBJECT:", memory.last_email)
+        #print("EMAIL OBJECT:", memory.last_email)
         
         email_body = memory.last_email.get("body", "")
 

@@ -10,9 +10,11 @@ torch
 beautifulsoup4
 
 SpeechRecognition
-pyttsx3
-pyaudio/sounddevice
+pyttsx3/sounddevice
+
 
 requests
+spacy
 
-spaCy
+google-genai
+pip install python-dotenv

@@ -31,10 +31,15 @@ def read_upcoming_events(creds, max_results=5):
 from datetime import timedelta
 
 
+from datetime import datetime
+
 def create_calendar_event(creds, title, event_datetime):
-    from googleapiclient.discovery import build
 
     service = build("calendar", "v3", credentials=creds)
+
+    # 🔥 Convert string to datetime if needed
+    if isinstance(event_datetime, str):
+        event_datetime = datetime.strptime(event_datetime, "%Y-%m-%d %H:%M")
 
     event = {
         "summary": title,
@@ -43,10 +48,14 @@ def create_calendar_event(creds, title, event_datetime):
             "timeZone": "Asia/Kolkata",
         },
         "end": {
-            "dateTime": (event_datetime + timedelta(hours=1)).isoformat(),
+            "dateTime": event_datetime.isoformat(),
             "timeZone": "Asia/Kolkata",
         },
     }
+
+    service.events().insert(calendarId="primary", body=event).execute()
+
+    print("📅 Calendar event created successfully.")
 
     created_event = service.events().insert(
         calendarId="primary",

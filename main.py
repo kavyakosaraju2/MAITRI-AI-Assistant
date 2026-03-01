@@ -1,8 +1,16 @@
-from agent_brain.email_summarizer import summarize_email
-from agent_brain.summary import generate_summary
-from agent_brain.question_answering import answer_question
-from agent_brain.decision_engine import decide_response   # ✅ NEW
+# ============================================
+# MAITRI – Phase 18 (AI Engine Migration)
+# ============================================
 
+# -----------------------------
+# ENGINE TOGGLE
+# -----------------------------
+USE_AI_ENGINE = True   # 🔁 Change to False to use old decision_engine
+
+
+# -----------------------------
+# IMPORTS
+# -----------------------------
 from auth.google_auth import google_login
 from gmail_agent.gmail_reader import read_latest_emails
 from calendar_agent.calendar_reader import read_upcoming_events
@@ -11,28 +19,41 @@ from task_agent.task_reader import read_tasks
 from voice.voice_input import listen_to_user
 from voice.voice_output import speak
 
+from agent_brain.context_memory import memory
+
+if USE_AI_ENGINE:
+    from agent_brain.ai_decision_engine import ai_decision_engine
+else:
+    from agent_brain.decision_engine import decide_response
+
+
+# ============================================
+# STARTUP
+# ============================================
 
 print("MAITRI is starting...\n")
 
-# -------------------------------------------------
+# -----------------------------
 # GOOGLE LOGIN (ONLY ONCE)
-# -------------------------------------------------
+# -----------------------------
 creds = google_login()
 print("🔐 Google login completed\n")
 
-from agent_brain.context_memory import memory
 memory.creds = creds
 
-# -------------------------------------------------
-# VOICE COMMAND MODE – PHASE 15 (AI BASED)
-# -------------------------------------------------
-from agent_brain.context_memory import memory
-
+# -----------------------------
+# GREETING
+# -----------------------------
 startup_message = "Hello! I am ready to help you."
 print(startup_message)
 speak(startup_message)
 
 print("\n🎧 VOICE COMMAND MODE (say 'stop' to exit)")
+
+
+# ============================================
+# MAIN LOOP
+# ============================================
 
 while True:
 
@@ -47,15 +68,52 @@ while True:
         print("🛑 MAITRI stopped.")
         break
 
+    # -----------------------------
     # LIVE FETCH EVERY TIME
+    # -----------------------------
     emails = read_latest_emails(creds)
     events = read_upcoming_events(creds)
     tasks = read_tasks(creds)
 
     memory.creds = creds
+    emails = read_latest_emails(creds)
+    # Filter only primary unread emails
+    filtered_emails = []
+    for email in emails:
+        labels = email.get("labels", [])
+        if "UNREAD" in labels and "CATEGORY_UPDATES" not in labels:
+            filtered_emails.append(email)
+    emails = filtered_emails
+    
 
-    response = decide_response(user_command, emails, events, tasks)
 
+    # -----------------------------
+    # DECISION ENGINE
+    # -----------------------------
+    if USE_AI_ENGINE:
+        response = ai_decision_engine(user_command, emails, events, tasks)
+
+        # If AI returns JSON action
+        if isinstance(response, dict):
+            action = response.get("action")
+            parameters = response.get("parameters", {})
+
+            # ---- HANDLE ACTIONS ----
+            if action == "read_emails":
+                response = "You have {} recent emails.".format(len(emails))
+
+            elif action == "daily_summary":
+                response = f"You have {len(emails)} emails, {len(events)} events, and {len(tasks)} tasks."
+
+            else:
+                response = "I detected an action, but execution logic is not connected yet."
+
+    else:
+        response = decide_response(user_command, emails, events, tasks)
+
+    # -----------------------------
+    # FALLBACK
+    # -----------------------------
     if not response:
         response = "I am not sure how to respond to that."
 

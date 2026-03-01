@@ -24,7 +24,7 @@ def read_latest_emails(creds, max_results=10):
 
     results = service.users().messages().list(
         userId="me",
-        labelIds=["INBOX"],
+        q="is:unread category:primary",
         maxResults=max_results
     ).execute()
 
@@ -87,6 +87,7 @@ def read_latest_emails(creds, max_results=10):
                 body = clean_email_text(html)
 
         emails.append({
+            "id": msg["id"],
             "from": sender,
             "subject": subject,
             "body": body,
@@ -96,5 +97,7 @@ def read_latest_emails(creds, max_results=10):
 
         if len(emails) >= 5:
             break
+        
+        
 
     return emails
