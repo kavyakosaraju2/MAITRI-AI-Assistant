@@ -13,5 +13,6 @@ class Memory:
         self.last_meeting = None
         self.pending_reply=None
         self.last_email_category = None
+       
 
 memory = Memory()

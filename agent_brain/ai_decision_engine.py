@@ -218,7 +218,7 @@ def ai_decision_engine(user_command, emails, events, tasks):
 
                 for email in action["emails"]:
 
-                    move_to_spam(memory.creds, email["gmail_id"])
+                    move_to_spam(memory.creds, email["id"])
                 return "Spam emails moved to the spam folder."
             
             print("ACTION TYPE:", action["type"])
@@ -249,9 +249,6 @@ def ai_decision_engine(user_command, emails, events, tasks):
 
                 return f"{len(new_tasks)} tasks have been added to your task list."
             
-            
-           
-
         if "no" in lower:
             memory.pending_action = None
             return "Okay, I will not proceed with the action."
@@ -434,6 +431,7 @@ def ai_decision_engine(user_command, emails, events, tasks):
             latest = emails[0]
 
             memory.last_email = latest  # ⭐ store context
+            memory.last_context_type = "SINGLE_EMAIL" 
 
             subject = latest.get("subject", "No Subject")
             sender = latest.get("from", "Unknown Sender")
@@ -468,6 +466,30 @@ def ai_decision_engine(user_command, emails, events, tasks):
 
         return "I could not find any email to summarize."
         # -------------------------------------------------
+    # FOLLOW-UP QUESTIONS ABOUT LAST EMAIL
+    # -------------------------------------------------
+    if getattr(memory, "last_email", None):
+
+        if "who sent" in lower or "who sent it" in lower:
+
+            sender = memory.last_email.get("from", "Unknown Sender")
+            return f"The email was sent by {sender}."
+
+        if "what is the subject" in lower or "subject" in lower:
+
+            subject = memory.last_email.get("subject", "No Subject")
+            return f"The subject of the email is '{subject}'."
+
+        if "when was it sent" in lower or "when did i receive it" in lower:
+
+            date = memory.last_email.get("received_at", "Unknown date")
+            return f"You received it on {date}."
+
+        if "read it" in lower or "read the email" in lower:
+
+            body = memory.last_email.get("body", "")
+            return body[:500]
+    
     # LIST RECENT EMAILS
     # -------------------------------------------------
     if "what emails" in lower or "emails did i receive" in lower or "show my emails" in lower:
@@ -555,10 +577,6 @@ def ai_decision_engine(user_command, emails, events, tasks):
 
         return response
    
-    
-
-       
-
     # -------------------------------------------------
     # 6️⃣ RAG QUERIES
     # -------------------------------------------------
@@ -639,12 +657,13 @@ def ai_decision_engine(user_command, emails, events, tasks):
     # INTENT CLASSIFICATION
     # -------------------------------------------------
 
-    if any(word in lower for word in ["this", "it", "that"]):
+    if any(word in lower for word in ["this", "it", "that", "them", "those"]):
 
-        if memory.last_context_type in ["SINGLE_EMAIL", "MULTI_EMAIL"]:
+        if memory.last_context_type in ["SINGLE_EMAIL", "MULTI_EMAIL", "EMAIL_OVERVIEW"]:
 
             intent = memory.last_context_type
             print(f"🧠 Using previous context: {intent}")
+           
 
         else:
 
