@@ -1,20 +1,23 @@
 # MAITRI AI Assistant
-# Python Version : 3.10.5
+# Python Version: 3.10.5
+
+google-api-python-client
 google-auth
 google-auth-oauthlib
 google-auth-httplib2
 
+openai
+supabase
+python-dotenv
+
 transformers
 torch
+spacy
 
 beautifulsoup4
 
 SpeechRecognition
-pyttsx3/sounddevice
-
+pyttsx3
+sounddevice
 
 requests
-spacy
-
-google-genai
-pip install python-dotenv

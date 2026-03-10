@@ -1,35 +1,58 @@
 import spacy
+from datetime import datetime, timedelta
+from dateutil import parser
 
 # Load English model
 nlp = spacy.load("en_core_web_sm")
 
 
+MEETING_KEYWORDS = [
+    "meeting",
+    "call",
+    "zoom",
+    "google meet",
+    "meet",
+    "discussion",
+    "appointment"
+]
+
+
 def extract_entities(text: str) -> dict:
-    """
-    Extracts named entities from user input.
-    Returns dictionary with possible date, time, person, org.
-    """
 
-    doc = nlp(text)
+    text_lower = text.lower()
 
-    entities = {
-        "date": [],
-        "time": [],
-        "person": [],
-        "organization": []
-    }
+    now = datetime.now()
 
-    for ent in doc.ents:
-        if ent.label_ == "DATE":
-            entities["date"].append(ent.text)
+    if "day after tomorrow" in text_lower:
+        base_date = now + timedelta(days=2)
+        date_str = base_date.strftime("%Y-%m-%d")
 
-        elif ent.label_ == "TIME":
-            entities["time"].append(ent.text)
+    elif "tomorrow" in text_lower:
+        base_date = now + timedelta(days=1)
+        date_str = base_date.strftime("%Y-%m-%d")
 
-        elif ent.label_ == "PERSON":
-            entities["person"].append(ent.text)
+    elif "today" in text_lower:
+        date_str = now.strftime("%Y-%m-%d")
 
-        elif ent.label_ == "ORG":
-            entities["organization"].append(ent.text)
+    else:
+        date_str = None
 
-    return entities
+    try:
+
+        parsed = parser.parse(text, fuzzy=True)
+
+        if date_str:
+            parsed = parsed.replace(
+                year=int(date_str[:4]),
+                month=int(date_str[5:7]),
+                day=int(date_str[8:10])
+            )
+
+        return {
+            "date": parsed.date().isoformat(),
+            "time": parsed.time().isoformat(),
+            "datetime": parsed.strftime("%Y-%m-%dT%H:%M:%S")
+        }
+
+    except Exception:
+        return {"date": None, "time": None, "datetime": None}

@@ -1,16 +1,5 @@
-# ============================================
-# MAITRI – Phase 18 (AI Engine Migration)
-# ============================================
-
-# -----------------------------
 # ENGINE TOGGLE
-# -----------------------------
-USE_AI_ENGINE = True   # 🔁 Change to False to use old decision_engine
-
-
-# -----------------------------
-# IMPORTS
-# -----------------------------
+USE_AI_ENGINE = True   #  Change to False to use old decision_engine
 from auth.google_auth import google_login
 from gmail_agent.gmail_reader import read_latest_emails
 from calendar_agent.calendar_reader import read_upcoming_events
@@ -18,6 +7,8 @@ from task_agent.task_reader import read_tasks
 
 from voice.voice_input import listen_to_user
 from voice.voice_output import speak
+import threading
+from gmail_agent.email_watcher import start_email_watcher
 
 from agent_brain.context_memory import memory
 
@@ -26,35 +17,34 @@ if USE_AI_ENGINE:
 else:
     from agent_brain.decision_engine import decide_response
 
-
-# ============================================
 # STARTUP
-# ============================================
-
 print("MAITRI is starting...\n")
 
-# -----------------------------
 # GOOGLE LOGIN (ONLY ONCE)
-# -----------------------------
 creds = google_login()
 print("🔐 Google login completed\n")
 
 memory.creds = creds
 
-# -----------------------------
+user_id = "969853fc-a331-4a27-a15d-23d520e8f313"
+
+memory.user_id = user_id
+
+threading.Thread(
+    target=start_email_watcher,
+    args=(creds, user_id),
+    daemon=True
+).start()
+
 # GREETING
-# -----------------------------
+
 startup_message = "Hello! I am ready to help you."
 print(startup_message)
 speak(startup_message)
 
 print("\n🎧 VOICE COMMAND MODE (say 'stop' to exit)")
 
-
-# ============================================
 # MAIN LOOP
-# ============================================
-
 while True:
 
     user_command = listen_to_user()
@@ -68,28 +58,27 @@ while True:
         print("🛑 MAITRI stopped.")
         break
 
-    # -----------------------------
     # LIVE FETCH EVERY TIME
-    # -----------------------------
     emails = read_latest_emails(creds)
     events = read_upcoming_events(creds)
     tasks = read_tasks(creds)
 
     memory.creds = creds
-    emails = read_latest_emails(creds)
-    # Filter only primary unread emails
-    filtered_emails = []
-    for email in emails:
-        labels = email.get("labels", [])
-        if "UNREAD" in labels and "CATEGORY_UPDATES" not in labels:
-            filtered_emails.append(email)
-    emails = filtered_emails
+    
     
 
+    # Filter primary emails (remove promotions and social)
+    filtered_emails = []
 
-    # -----------------------------
+    for email in emails:
+        labels = email.get("labels", [])
+
+        if "CATEGORY_PROMOTIONS" not in labels and "CATEGORY_SOCIAL" not in labels:
+            filtered_emails.append(email)
+
+    emails = filtered_emails
     # DECISION ENGINE
-    # -----------------------------
+    
     if USE_AI_ENGINE:
         response = ai_decision_engine(user_command, emails, events, tasks)
 
@@ -111,9 +100,7 @@ while True:
     else:
         response = decide_response(user_command, emails, events, tasks)
 
-    # -----------------------------
     # FALLBACK
-    # -----------------------------
     if not response:
         response = "I am not sure how to respond to that."
 

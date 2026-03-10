@@ -1,7 +1,9 @@
 from googleapiclient.discovery import build
 from datetime import datetime
 
-def read_upcoming_events(creds, max_results=5):
+
+def read_upcoming_events(creds, max_results=10):
+
     service = build("calendar", "v3", credentials=creds)
 
     now = datetime.utcnow().isoformat() + "Z"
@@ -16,50 +18,85 @@ def read_upcoming_events(creds, max_results=5):
 
     events = events_result.get("items", [])
 
-    #print("\n📅 Upcoming Calendar Events:\n")
-
-    for event in events:
-        start = event["start"].get("dateTime", event["start"].get("date"))
-        title = event.get("summary", "No Title")
-
-        #print(f"Event: {title}")
-        #print(f"Starts at: {start}")
-        #print("-" * 40)
-
     return events
 
-from datetime import timedelta
 
-
-from datetime import datetime
-
-def create_calendar_event(creds, title, event_datetime):
+def delete_calendar_event(creds, event_id):
 
     service = build("calendar", "v3", credentials=creds)
 
-    # 🔥 Convert string to datetime if needed
-    if isinstance(event_datetime, str):
-        event_datetime = datetime.strptime(event_datetime, "%Y-%m-%d %H:%M")
-
-    event = {
-        "summary": title,
-        "start": {
-            "dateTime": event_datetime.isoformat(),
-            "timeZone": "Asia/Kolkata",
-        },
-        "end": {
-            "dateTime": event_datetime.isoformat(),
-            "timeZone": "Asia/Kolkata",
-        },
-    }
-
-    service.events().insert(calendarId="primary", body=event).execute()
-
-    print("📅 Calendar event created successfully.")
-
-    created_event = service.events().insert(
+    service.events().delete(
         calendarId="primary",
+        eventId=event_id
+    ).execute()
+
+    return "The meeting has been deleted from your calendar."
+
+
+
+def find_event_for_deletion(events, query):
+
+    query = query.lower()
+
+    # 1️⃣ Exact title match
+    for event in events:
+        title = event.get("summary", "").lower()
+
+        if title in query:
+            return event
+
+    # 2️⃣ Partial match
+    for event in events:
+        title = event.get("summary", "").lower()
+
+        if any(word in title for word in query.split()):
+            return event
+
+    # 3️⃣ If user only says "the meeting", return most recent meeting
+    if "meeting" in query and events:
+        return events[0]
+
+    return None
+
+def update_calendar_event(creds, event_id, new_time):
+
+    from googleapiclient.discovery import build
+    from datetime import datetime, timedelta
+
+    service = build("calendar", "v3", credentials=creds)
+
+    event = service.events().get(
+        calendarId="primary",
+        eventId=event_id
+    ).execute()
+
+    start_time = datetime.fromisoformat(new_time)
+    end_time = start_time + timedelta(hours=1)
+
+    event["start"]["dateTime"] = start_time.isoformat()
+    event["end"]["dateTime"] = end_time.isoformat()
+
+    service.events().update(
+        calendarId="primary",
+        eventId=event_id,
         body=event
     ).execute()
 
-    return created_event.get("htmlLink")
+    return "The meeting has been rescheduled."
+def rename_calendar_event(creds, event_id, new_title):
+    service = build("calendar", "v3", credentials=creds)
+
+    event = service.events().get(
+        calendarId="primary",
+        eventId=event_id
+    ).execute()
+
+    event["summary"] = new_title
+
+    service.events().update(
+        calendarId="primary",
+        eventId=event_id,
+        body=event
+    ).execute()
+
+    return "The meeting title has been updated."

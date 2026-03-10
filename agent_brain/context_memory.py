@@ -11,5 +11,7 @@ class Memory:
         self.last_email_set = None
         self.last_extracted_tasks = None
         self.last_meeting = None
+        self.pending_reply=None
+        self.last_email_category = None
 
 memory = Memory()
