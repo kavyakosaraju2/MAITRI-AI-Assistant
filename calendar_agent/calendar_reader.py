@@ -83,6 +83,7 @@ def update_calendar_event(creds, event_id, new_time):
     ).execute()
 
     return "The meeting has been rescheduled."
+
 def rename_calendar_event(creds, event_id, new_title):
     service = build("calendar", "v3", credentials=creds)
 
